@@ -18,7 +18,7 @@ type RacesRepo interface {
 	Init() error
 
 	// List will return a list of races.
-	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+	List(filter *racing.ListRacesRequestFilter, orderBy *racing.ListRacesRequestOrderBy) ([]*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -43,7 +43,7 @@ func (r *racesRepo) Init() error {
 	return err
 }
 
-func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error) {
+func (r *racesRepo) List(filter *racing.ListRacesRequestFilter, orderBy *racing.ListRacesRequestOrderBy) ([]*racing.Race, error) {
 	var (
 		err   error
 		query string
@@ -53,6 +53,8 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 	query = getRaceQueries()[racesList]
 
 	query, args = r.applyFilter(query, filter)
+
+	query = r.orderBy(query, orderBy)
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -89,6 +91,15 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	}
 
 	return query, args
+}
+
+func (r *racesRepo) orderBy(query string, orderBy *racing.ListRacesRequestOrderBy) string {
+	if orderBy == nil {
+		query += " ORDER BY advertised_start_time "
+	} else {
+		query += " ORDER BY " + orderBy.Column
+	}
+	return query
 }
 
 func (m *racesRepo) scanRaces(
